@@ -1,0 +1,183 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // 1. Global safety net (Default Deny Catch-all)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- REUSABLE SECURITY PRIMITIVES ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // --- ENTITY SHAPE VALIDATION BLUEPRINTS ---
+    
+    function isValidLiveStream(data) {
+      return data.isEnabled is bool
+        && data.streamUrl is string 
+        && data.streamUrl.size() <= 1000
+        && data.title is string 
+        && data.title.size() <= 200
+        && data.description is string 
+        && data.description.size() <= 2000
+        && data.posterUrl is string 
+        && data.posterUrl.size() <= 1000000
+        && data.viewerCount is int
+        && data.viewerCount >= 0
+        && data.keys().hasAll(['isEnabled', 'streamUrl', 'title', 'description', 'posterUrl', 'viewerCount'])
+        && data.keys().size() == 6;
+    }
+
+    function isValidAboutUs(data) {
+      return data.philosophy is string 
+        && data.philosophy.size() <= 5000
+        && data.studioLocation is string 
+        && data.studioLocation.size() <= 500
+        && data.studioEquipment is list
+        && data.studioEquipment.size() <= 50
+        && data.team is list
+        && data.team.size() <= 50
+        && data.faqs is list
+        && data.faqs.size() <= 100
+        && data.keys().hasAll(['philosophy', 'studioLocation', 'studioEquipment', 'team', 'faqs'])
+        && data.keys().size() == 5;
+    }
+
+    function isValidScheduleItem(data) {
+      return data.id is string 
+        && data.id.size() <= 128
+        && data.title is string 
+        && data.title.size() <= 300
+        && data.host is string 
+        && data.host.size() <= 300
+        && data.startTime is string 
+        && data.startTime.size() <= 10
+        && data.endTime is string 
+        && data.endTime.size() <= 10
+        && data.day is string 
+        && data.day.size() <= 20
+        && data.description is string 
+        && data.description.size() <= 2000
+        && data.category is string 
+        && data.category in ['news', 'sports', 'entertainment', 'music', 'other']
+        && (!('isRecurring' in data.keys()) || data.isRecurring is bool)
+        && (!('date' in data.keys()) || (data.date is string && data.date.size() <= 30))
+        && data.keys().hasAll(['id', 'title', 'host', 'startTime', 'endTime', 'day', 'description', 'category'])
+        && (data.keys().size() >= 8 && data.keys().size() <= 10);
+    }
+
+    function isValidVideoItem(data) {
+      return data.id is string 
+        && data.id.size() <= 128
+        && data.title is string 
+        && data.title.size() <= 300
+        && data.youtubeId is string 
+        && data.youtubeId.size() == 11
+        && data.description is string 
+        && data.description.size() <= 2000
+        && data.duration is string 
+        && data.duration.size() <= 20
+        && data.views is int 
+        && data.views >= 0
+        && data.likes is int 
+        && data.likes >= 0
+        && data.publishedDate is string 
+        && data.publishedDate.size() <= 30
+        && data.category is string 
+        && data.category.size() <= 100
+        && (!('featured' in data.keys()) || data.featured is bool)
+        && data.keys().hasAll(['id', 'title', 'youtubeId', 'description', 'duration', 'views', 'likes', 'publishedDate', 'category'])
+        && (data.keys().size() == 9 || (data.keys().size() == 10 && 'featured' in data.keys()));
+    }
+
+    function isValidVolunteerApplicant(data) {
+      return data.name is string 
+        && data.name.size() > 0 
+        && data.name.size() <= 200
+        && data.email is string 
+        && data.email.size() > 0 
+        && data.email.size() <= 300
+        && data.course is string 
+        && data.course.size() > 0 
+        && data.course.size() <= 300
+        && data.role is string 
+        && data.role.size() > 0 
+        && data.role.size() <= 300
+        && data.keys().hasAll(['name', 'email', 'course', 'role']);
+    }
+
+    function isValidScheduleSetting(data) {
+      return data.useExternalApi is bool
+        && data.keys().hasAll(['useExternalApi'])
+        && data.keys().size() == 1;
+    }
+
+    // --- COLLECTION RULE MATCHERS ---
+
+    // 1. Config Documents (/config/liveStream, /config/aboutUs)
+    match /config/{configId} {
+      // Public visitors can read the station's configuration
+      allow get: if isValidId(configId);
+      
+      // Signed-in members can write to config with strict validations
+      allow create, update: if isSignedIn() 
+        && isValidId(configId)
+        && (
+          (configId == 'liveStream' && isValidLiveStream(request.resource.data)) ||
+          (configId == 'aboutUs' && isValidAboutUs(request.resource.data)) ||
+          (configId == 'scheduleSetting' && isValidScheduleSetting(request.resource.data))
+        );
+      
+      // Standard config documents cannot be deleted arbitrarily
+      allow delete: if false;
+    }
+
+    // 2. Schedule Grid Items (/schedule/{scheduleId})
+    match /schedule/{scheduleId} {
+      allow get: if isValidId(scheduleId);
+      allow list: if true; // Public listings
+
+      allow create, update: if isSignedIn()
+        && isValidId(scheduleId)
+        && isValidScheduleItem(request.resource.data);
+
+      allow delete: if isSignedIn()
+        && isValidId(scheduleId);
+    }
+
+    // 3. YouTube On Demand Catalog (/videos/{videoId})
+    match /videos/{videoId} {
+      allow get: if isValidId(videoId);
+      allow list: if true; // Public listing is safe
+
+      allow create, update: if isSignedIn()
+        && isValidId(videoId)
+        && isValidVideoItem(request.resource.data);
+
+      allow delete: if isSignedIn()
+        && isValidId(videoId);
+    }
+
+    // 4. Student Volunteers (/volunteers/{volunteerId})
+    match /volunteers/{volunteerId} {
+      // Unauthenticated submissions are fine to support public recruiting forms,
+      // but must strictly follow type validations.
+      allow create: if isValidId(volunteerId)
+        && isValidVolunteerApplicant(request.resource.data);
+
+      // PII Protection: Only logged-in Trent TV staff (isSignedIn) can list/get/delete applicants
+      allow get: if isSignedIn() && isValidId(volunteerId);
+      allow list: if isSignedIn();
+      allow delete: if isSignedIn() && isValidId(volunteerId);
+
+      // Applications cannot be updated after creation to prevent revision history spoofing
+      allow update: if false;
+    }
+  }
+}

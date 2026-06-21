@@ -1,0 +1,6 @@
+{
+  "name": "Trent TV",
+  "description": "The online home of Trent TV, Nottingham Trent University's student television station, featuring a fully featured CMS, live stream with customizable poster images, program schedule manager, and YouTube catalog.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

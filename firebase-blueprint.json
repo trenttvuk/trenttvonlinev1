@@ -1,0 +1,227 @@
+{
+  "entities": {
+    "liveStreamConfig": {
+      "title": "Live Stream Configuration",
+      "description": "Details of the active video broadcast and standby state.",
+      "type": "object",
+      "properties": {
+        "isEnabled": {
+          "type": "boolean",
+          "description": "True if live video stream is currently active."
+        },
+        "streamUrl": {
+          "type": "string",
+          "description": "The target YouTube embed or stream URL."
+        },
+        "title": {
+          "type": "string",
+          "description": "The active show title or standby title."
+        },
+        "description": {
+          "type": "string",
+          "description": "A description of the stream content."
+        },
+        "posterUrl": {
+          "type": "string",
+          "description": "Fallback image URL or base64 data shown when offline."
+        },
+        "viewerCount": {
+          "type": "integer",
+          "description": "Estimated live user viewing count."
+        }
+      },
+      "required": ["isEnabled", "streamUrl", "title", "description", "posterUrl", "viewerCount"]
+    },
+    "scheduleItem": {
+      "title": "Schedule Item",
+      "description": "A single entry on the Trent TV broadcast grid.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique slot identifier."
+        },
+        "title": {
+          "type": "string",
+          "description": "Title of the show segment."
+        },
+        "host": {
+          "type": "string",
+          "description": "Names of presenters hosting the segment."
+        },
+        "startTime": {
+          "type": "string",
+          "description": "HH:MM format start time."
+        },
+        "endTime": {
+          "type": "string",
+          "description": "HH:MM format end time."
+        },
+        "day": {
+          "type": "string",
+          "description": "Day of the week."
+        },
+        "description": {
+          "type": "string",
+          "description": "A short summary of what to expect in this episode."
+        },
+        "category": {
+          "type": "string",
+          "enum": ["news", "sports", "entertainment", "music", "other"],
+          "description": "Sub-theme of the programming."
+        },
+        "isRecurring": {
+          "type": "boolean",
+          "description": "True if the program repeats weekly, false if it is a standalone upcoming show."
+        },
+        "date": {
+          "type": "string",
+          "description": "The specific YYYY-MM-DD date representation if non-recurring."
+        }
+      },
+      "required": ["id", "title", "host", "startTime", "endTime", "day", "description", "category"]
+    },
+    "videoItem": {
+      "title": "Video Item",
+      "description": "An on-demand YouTube broadcast video file.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique database ID."
+        },
+        "title": {
+          "type": "string",
+          "description": "Headline title of the video report."
+        },
+        "youtubeId": {
+          "type": "string",
+          "description": "11-character YouTube video reference id."
+        },
+        "description": {
+          "type": "string",
+          "description": "Detailed description block."
+        },
+        "duration": {
+          "type": "string",
+          "description": "MM:SS run time duration."
+        },
+        "views": {
+          "type": "integer",
+          "description": "Accumulated view count statistic."
+        },
+        "likes": {
+          "type": "integer",
+          "description": "Accumulated likes statistic."
+        },
+        "publishedDate": {
+          "type": "string",
+          "description": "YYYY-MM-DD production date."
+        },
+        "category": {
+          "type": "string",
+          "description": "Genre categorization."
+        },
+        "featured": {
+          "type": "boolean",
+          "description": "Marked for homepage trending carousel if true."
+        }
+      },
+      "required": ["id", "title", "youtubeId", "description", "duration", "views", "likes", "publishedDate", "category"]
+    },
+    "aboutUsData": {
+      "title": "About Us Data",
+      "description": "Station philosophy, location, equipment, team members, and FAQs.",
+      "type": "object",
+      "properties": {
+        "philosophy": {
+          "type": "string",
+          "description": "Detailed vision of the media group."
+        },
+        "studioLocation": {
+          "type": "string",
+          "description": "Address of our Byron media suites."
+        },
+        "studioEquipment": {
+          "type": "array",
+          "description": "List of high-end camera/mic systems available."
+        },
+        "team": {
+          "type": "array",
+          "description": "Structured list of team member objects."
+        },
+        "faqs": {
+          "type": "array",
+          "description": "Frequently asked student questions."
+        }
+      },
+      "required": ["philosophy", "studioLocation", "studioEquipment", "team", "faqs"]
+    },
+    "volunteerApplicant": {
+      "title": "Volunteer Applicant",
+      "description": "Roster applications submitted by prospective student volunteers.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Candidate full name."
+        },
+        "email": {
+          "type": "string",
+          "description": "Student primary @my.ntu.ac.uk email."
+        },
+        "course": {
+          "type": "string",
+          "description": "Degree and year of study."
+        },
+        "role": {
+          "type": "string",
+          "description": "Desired position (e.g., presenter, engineer, camera operator)."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Standard timestamp recording application date."
+        }
+      },
+      "required": ["name", "email", "course", "role"]
+    },
+    "scheduleSettingConfig": {
+      "title": "Schedule Source Configuration",
+      "description": "Saves whether the schedule is sourced locally or via external api feed.",
+      "type": "object",
+      "properties": {
+        "useExternalApi": {
+          "type": "boolean",
+          "description": "True if the schedule should pull from the joint external media API feed."
+        }
+      },
+      "required": ["useExternalApi"]
+    }
+  },
+  "firestore": {
+    "/config/liveStream": {
+      "schema": "liveStreamConfig",
+      "description": "Contains a single document setting active live-feeds."
+    },
+    "/config/aboutUs": {
+      "schema": "aboutUsData",
+      "description": "Contains static and team layout text fields."
+    },
+    "/config/scheduleSetting": {
+      "schema": "scheduleSettingConfig",
+      "description": "Determines whether the weekly television guide uses the local database or the joint student radio API."
+    },
+    "/schedule/{scheduleId}": {
+      "schema": "scheduleItem",
+      "description": "Collection of all weekly schedule entries."
+    },
+    "/videos/{videoId}": {
+      "schema": "videoItem",
+      "description": "Collection of on-demand Youtube highlight catalog items."
+    },
+    "/volunteers/{volunteerId}": {
+      "schema": "volunteerApplicant",
+      "description": "Roster submissions waiting for review."
+    }
+  }
+}
